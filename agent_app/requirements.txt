@@ -1,0 +1,21 @@
+# Core model + utils
+transformers>=4.43
+accelerate>=0.30
+torch>=2.2          # if you have CUDA, install per pytorch.org instructions
+
+# LangChain split packages
+langchain>=0.2
+langchain-community>=0.2
+langchain-huggingface>=0.0.1
+langchain-chroma>=0.1.0
+
+# OpenAI connector (only needed for agent mode)
+langchain-openai>=0.1.0
+
+# RAG bits
+chromadb>=0.5
+sentence-transformers>=3.0
+
+# CLI / misc
+rich>=13.7
+python-dotenv>=1.0
