@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  toxicity-ui:
+    build: .
+    container_name: toxicity-ui
+    env_file:
+      - .env
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./toxic_roberta_model:/models/toxic_roberta_model:ro
