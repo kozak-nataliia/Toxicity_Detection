@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 import torch
-from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 load_dotenv()
