@@ -5,7 +5,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 load_dotenv()
 
-MODEL_ID = os.environ["MODEL_ID"]
+MODEL_ID = "Natalya11/roberta_toxicity_detection"
 
 class ToxicModel:
     def __init__(self, threshold: float = 0.5):

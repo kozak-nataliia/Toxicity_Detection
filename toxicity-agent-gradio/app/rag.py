@@ -6,7 +6,7 @@ from typing import Optional
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
-DEFAULT_STORE_DIR = "agent_app/rag_store"
+DEFAULT_STORE_DIR = Path(__file__).resolve().parents[1] / "rag_store"
 DEFAULT_COLLECTION = "student_profile"
 
 def load_retriever(store_dir: Optional[Path] = None, k: int = 1):
