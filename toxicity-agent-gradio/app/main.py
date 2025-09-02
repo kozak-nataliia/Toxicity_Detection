@@ -1,12 +1,10 @@
 import os
-from pathlib import Path
 from dotenv import load_dotenv
 import gradio as gr
-
 from agent import make_pipeline
-from rag import load_retriever
 
 load_dotenv()
+from discord_log import log_ask_to_discord, get_last_asks
 
 pipe = make_pipeline()  # llm (maybe None), ToxicModel, agent (maybe None)
 
@@ -18,24 +16,50 @@ def classify_only(text: str):
 
 ### ——— Agent tab (exactly like terminal agent logic)
 def agent_ask(user_input: str):
-    if not user_input.strip():
+    text = (user_input or "").strip()
+    if not text:
         return "Please enter a question."
+
+    # 1) Mirror to Discord log channel (non-blocking best-effort)
+    try:
+        log_ask_to_discord(text, origin="gradio")
+    except Exception:
+        pass  # don't break the UI if Discord is unavailable
+
+    # 2) Pull the last 20 asks (oldest→newest) from the Discord log channel
+    try:
+        history = get_last_asks(k=20)
+    except Exception as e:
+        print(f"get_last_asks failed: {e}", flush=True)
+        history = []
+
+    # 3) No LLM: keep your existing fallback behavior
     if pipe.agent is None:
-        # Fallback if no OPENAI_API_KEY: run a naive heuristic
-        # If user asks about student/profile -> return retrieved context, else run toxicity
-        q = user_input.lower()
+        q = text.lower()
         about_student = any(k in q for k in ["when was", "who is", "about student", "born", "profile", "nataliia", "student"])
         if about_student:
-            return "LLM not configured. Retrieved context:\n\n" + retrieve_only(user_input)
+            # your existing fallback (unchanged)
+            return "LLM not configured. Retrieved context:\n\n" + retrieve_only(text)
         else:
-            return f"LLM not configured. Toxicity:\n{classify_only(user_input)}"
-    # With LLM: delegate to the same agent you used in terminal
+            # your existing fallback (unchanged)
+            return f"LLM not configured. Toxicity:\n{classify_only(text)}"
+
+    # 4) With LLM: try passing explicit 'history' first (if your agent supports it)
+    ctx_blob = "\n".join(f"- {h}" for h in history)
+    composed = (
+        "Use the following recent Discord asks as context (oldest first). "
+        "If asked, summarize and reference them. If not relevant, proceed normally.\n\n"
+        "[Recent Discord Asks]\n"
+        f"{ctx_blob}\n\n"
+        "[User]\n"
+        f"{text}"
+    )
     try:
-        res = pipe.agent.invoke({"input": user_input})
-        # LangChain returns dict with 'output' key typically
+        res = pipe.agent.invoke({"input": composed, "history": history})
         return res.get("output", str(res))
-    except Exception as e:
-        return f"Agent error: {e}"
+    except Exception as e2:
+        return f"Agent error: {e2}"
+
 
 def build_ui():
     with gr.Blocks(title="🧪 Toxicity + RAG Agent") as demo:
