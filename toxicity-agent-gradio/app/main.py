@@ -29,20 +29,12 @@ def agent_ask(user_input: str):
     # 2) Pull the last 20 asks (oldest→newest) from the Discord log channel
     try:
         history = get_last_asks(k=20)
-    except Exception as e:
-        print(f"get_last_asks failed: {e}", flush=True)
+    except Exception:
         history = []
 
     # 3) No LLM: keep your existing fallback behavior
     if pipe.agent is None:
-        q = text.lower()
-        about_student = any(k in q for k in ["when was", "who is", "about student", "born", "profile", "nataliia", "student"])
-        if about_student:
-            # your existing fallback (unchanged)
-            return "LLM not configured. Retrieved context:\n\n" + retrieve_only(text)
-        else:
-            # your existing fallback (unchanged)
-            return f"LLM not configured. Toxicity:\n{classify_only(text)}"
+        return f"LLM not configured. Toxicity:\n{classify_only(text)}"
 
     # 4) With LLM: try passing explicit 'history' first (if your agent supports it)
     ctx_blob = "\n".join(f"- {h}" for h in history)
@@ -54,6 +46,7 @@ def agent_ask(user_input: str):
         "[User]\n"
         f"{text}"
     )
+
     try:
         res = pipe.agent.invoke({"input": composed, "history": history})
         return res.get("output", str(res))
